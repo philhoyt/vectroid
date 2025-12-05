@@ -79,7 +79,7 @@ const Upgrades = {
         {
             id: 'bulletSize',
             name: 'Bigger Bullets',
-            multiplier: 0.15, // 15% increase per level (reduced from 20% to slow scaling)
+            multiplier: 0.20, // 20% increase per level (increased from 15% to grow faster)
             getDescription: (level) => {
                 // Show what you'll get after selecting (next level)
                 const nextLevel = level + 1;

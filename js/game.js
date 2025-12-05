@@ -3,15 +3,29 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Set canvas size
-canvas.width = CONFIG.CANVAS_WIDTH;
-canvas.height = CONFIG.CANVAS_HEIGHT;
-
 // Create offscreen canvas for post-processing effects
 const offscreenCanvas = document.createElement('canvas');
-offscreenCanvas.width = CONFIG.CANVAS_WIDTH;
-offscreenCanvas.height = CONFIG.CANVAS_HEIGHT;
 const offscreenCtx = offscreenCanvas.getContext('2d');
+
+// Set canvas size to full window (max 1280×800 for performance)
+function resizeCanvas() {
+    const maxWidth = 1280;
+    const maxHeight = 800;
+    canvas.width = Math.min(window.innerWidth, maxWidth);
+    canvas.height = Math.min(window.innerHeight, maxHeight);
+    // Update config to match actual canvas size
+    CONFIG.CANVAS_WIDTH = canvas.width;
+    CONFIG.CANVAS_HEIGHT = canvas.height;
+    // Resize offscreen canvas
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+}
+
+// Initial resize
+resizeCanvas();
+
+// Resize on window resize
+window.addEventListener('resize', resizeCanvas);
 
 // Game state
 let bullets = [];
