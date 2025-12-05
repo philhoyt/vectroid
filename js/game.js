@@ -26,6 +26,7 @@ let gameState = 'playing'; // 'playing', 'gameOver', 'upgrade', 'paused'
 let score = 0;
 let xp = 0;
 let level = 1;
+let lives = 3; // Start with 3 lives
 let availableUpgrades = [];
 let selectedUpgradeIndex = 0; // Currently selected upgrade index for controller navigation
 let upgradeScrollOffset = 0; // Scroll offset for upgrade menu
@@ -81,6 +82,7 @@ function resetGame() {
     score = 0;
     xp = 0;
     level = 1;
+    lives = 3; // Reset to 3 lives
     availableUpgrades = [];
     selectedUpgradeIndex = 0;
     upgradeScrollOffset = 0;
@@ -103,6 +105,34 @@ function resetGame() {
     Spawn.init();
     Upgrades.init();
     Sound.init();
+}
+
+// Respawn player after death (if lives remaining)
+function respawnPlayer() {
+    // Clear nearby enemies and bullets for safety
+    const playerPos = Player.getPosition();
+    enemies = enemies.filter(enemy => {
+        const dx = enemy.x - playerPos.x;
+        const dy = enemy.y - playerPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        return dist > 200; // Clear enemies within 200 pixels
+    });
+    bullets = bullets.filter(bullet => {
+        const dx = bullet.x - playerPos.x;
+        const dy = bullet.y - playerPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        return dist > 200; // Clear bullets within 200 pixels
+    });
+    
+    // Reset player
+    Player.alive = true;
+    Player.x = 0;
+    Player.y = 0;
+    Player.vx = 0;
+    Player.vy = 0;
+    Player.isDashing = false;
+    Player.dashCooldown = 0;
+    Player.dashTrail = [];
 }
 
 function update(deltaTime) {
@@ -314,7 +344,6 @@ function update(deltaTime) {
             if (!asteroid.active) continue;
             if (Collision.checkPlayerAsteroid(playerPos, asteroid)) {
                 Player.alive = false;
-                gameState = 'gameOver';
                 break;
             }
         }
@@ -352,7 +381,7 @@ function update(deltaTime) {
     
     // Update XP orbs
     for (let orb of xpOrbs) {
-        updateXPOrb(orb, playerPos, deltaTime);
+        updateXPOrb(orb, playerPos, deltaTime, orbAbsorbers);
     }
     xpOrbs = xpOrbs.filter(o => o.active);
     
@@ -396,18 +425,36 @@ function update(deltaTime) {
     // Check for level up (exponential XP requirements)
     const newLevel = getLevelFromXP(xp);
     if (newLevel > level) {
+        const oldLevel = level;
         level = newLevel;
         // Screen shake on level up
         triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY, CONFIG.SCREEN_SHAKE_DURATION);
+        
+        // Earn a life every 5 levels
+        if (level % 5 === 0 && level > oldLevel) {
+            lives++;
+            // Extra screen shake for earning a life
+            triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY * 1.5, CONFIG.SCREEN_SHAKE_DURATION * 1.5);
+        }
+        
         availableUpgrades = Upgrades.getRandomUpgrades(CONFIG.UPGRADE_OPTIONS_COUNT);
         selectedUpgradeIndex = 0; // Reset selection when showing new upgrades
         upgradeScrollOffset = 0; // Reset scroll
         gameState = 'upgrade';
     }
     
-    // Check game over
+    // Check for player death
     if (!Player.alive && gameState === 'playing') {
-        gameState = 'gameOver';
+        lives--;
+        if (lives > 0) {
+            // Respawn with remaining lives
+            respawnPlayer();
+            // Brief invulnerability visual feedback
+            triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY * 0.5, CONFIG.SCREEN_SHAKE_DURATION * 0.5);
+        } else {
+            // No lives left - game over
+            gameState = 'gameOver';
+        }
     }
 }
 
@@ -502,6 +549,7 @@ function render() {
         renderCtx.textBaseline = 'top';
         renderCtx.fillText(`Score: ${score}`, 10, 10);
         renderCtx.fillText(`Level: ${level}`, 10, 35);
+        renderCtx.fillText(`Lives: ${lives}`, 10, 60);
         
         // Render upgrade summary (Risk of Rain style)
         const upgrades = Upgrades.getUpgradeSummary();
@@ -515,11 +563,11 @@ function render() {
             });
         }
         
-        // Render XP bar (Warcraft style)
-        const xpBarWidth = 300;
+        // Render XP bar (Warcraft style) - at bottom of screen
+        const xpBarWidth = canvas.width - 40; // Full width minus padding
         const xpBarHeight = 20;
-        const xpBarX = 10;
-        const xpBarY = 65;
+        const xpBarX = 20;
+        const xpBarY = canvas.height - 40; // Near bottom of screen
         
         // Calculate XP progress for current level (exponential)
         const xpForCurrentLevel = getXPForLevel(level);
@@ -667,8 +715,9 @@ function render() {
         ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
         ctx.font = '32px Courier New';
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText(`Reached Level: ${level}`, canvas.width / 2, canvas.height / 2 + 60);
         ctx.font = '24px Courier New';
-        ctx.fillText('Press R or Start to restart', canvas.width / 2, canvas.height / 2 + 70);
+        ctx.fillText('Press R or Start to restart', canvas.width / 2, canvas.height / 2 + 100);
     } else if (gameState === 'paused') {
         // Render game in background (paused)
         const playerPos = Player.getPosition();
@@ -723,6 +772,7 @@ function render() {
         ctx.textBaseline = 'top';
         ctx.fillText(`Score: ${score}`, 10, 10);
         ctx.fillText(`Level: ${level}`, 10, 35);
+        ctx.fillText(`Lives: ${lives}`, 10, 60);
         
         // Render upgrade summary
         const upgrades = Upgrades.getUpgradeSummary();

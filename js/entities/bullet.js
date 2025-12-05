@@ -59,7 +59,7 @@ function updateBullet(bullet, deltaTime, playerPos, enemies = []) {
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                 while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
                 
-                // Turn rate: 0.15 radians per frame (adjustable)
+                // Turn rate: 0.15 radians per frame
                 const turnRate = 0.15;
                 const turnAmount = Math.max(-turnRate, Math.min(turnRate, angleDiff));
                 const newAngle = currentAngle + turnAmount;

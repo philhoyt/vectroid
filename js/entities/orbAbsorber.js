@@ -6,6 +6,8 @@ function createOrbAbsorber(x, y) {
         y,
         active: true,
         collected: false,
+        isCollecting: false, // When true, orbs are being attracted to it
+        collectionStartTime: 0, // When collection started
         pulseTime: 0,
         spawnTime: Date.now() // Track when it was spawned for lifespan
     };

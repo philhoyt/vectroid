@@ -7,24 +7,64 @@ function createXPOrb(x, y, xpAmount, size = 6) {
         xpAmount: xpAmount,
         size: size, // Size of the orb (bigger for boss orbs)
         active: true,
-        collected: false
+        collected: false,
+        attractedToAbsorber: null // Reference to absorber this orb is moving towards
     };
 }
 
-function updateXPOrb(orb, playerPos, deltaTime) {
+function updateXPOrb(orb, playerPos, deltaTime, orbAbsorbers = []) {
     if (!orb.active || orb.collected) return;
     
-    // Move toward player if close enough (magnetic effect)
-    const dx = playerPos.x - orb.x;
-    const dy = playerPos.y - orb.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Check if there's a collecting absorber nearby (priority over player)
+    let attractedToAbsorber = null;
+    let minAbsorberDist = Infinity;
     
-    const pickupRadius = CONFIG.XP_PICKUP_RADIUS;
-    if (dist < pickupRadius) { // Magnetic range (scales with upgrade)
-        const speed = 3 + (pickupRadius - dist) / 20; // Faster when closer
+    for (let absorber of orbAbsorbers) {
+        if (!absorber.active || !absorber.isCollecting) continue;
+        
+        const dx = absorber.x - orb.x;
+        const dy = absorber.y - orb.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < CONFIG.ORB_ABSORBER_COLLECTION_RADIUS && dist < minAbsorberDist) {
+            minAbsorberDist = dist;
+            attractedToAbsorber = absorber;
+        }
+    }
+    
+    // Move towards absorber if one is collecting nearby
+    if (attractedToAbsorber) {
+        orb.attractedToAbsorber = attractedToAbsorber;
+        const dx = attractedToAbsorber.x - orb.x;
+        const dy = attractedToAbsorber.y - orb.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
         if (dist > 0) {
+            // Move towards absorber (faster than player attraction)
+            const speed = 8 + (CONFIG.ORB_ABSORBER_COLLECTION_RADIUS - dist) / 30;
             orb.x += (dx / dist) * speed;
             orb.y += (dy / dist) * speed;
+            
+            // Collect orb if it reaches the absorber
+            if (dist < 15) {
+                orb.collected = true;
+                orb.active = false;
+            }
+        }
+    } else {
+        // No absorber attracting - move toward player if close enough (magnetic effect)
+        orb.attractedToAbsorber = null;
+        const dx = playerPos.x - orb.x;
+        const dy = playerPos.y - orb.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const pickupRadius = CONFIG.XP_PICKUP_RADIUS;
+        if (dist < pickupRadius) { // Magnetic range (scales with upgrade)
+            const speed = 3 + (pickupRadius - dist) / 20; // Faster when closer
+            if (dist > 0) {
+                orb.x += (dx / dist) * speed;
+                orb.y += (dy / dist) * speed;
+            }
         }
     }
 }

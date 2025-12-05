@@ -340,24 +340,46 @@ const Collision = {
         for (let absorber of orbAbsorbers) {
             if (!absorber.active || absorber.collected) continue;
             
+            // Check if player touches absorber
             if (this.checkPlayerOrbAbsorber(player, absorber)) {
-                absorber.collected = true;
-                absorber.active = false;
-                
-                // Collect XP orbs within radius around absorber
+                if (!absorber.isCollecting) {
+                    // Start collection process - orbs will gravitate towards it
+                    absorber.isCollecting = true;
+                    absorber.collectionStartTime = Date.now();
+                }
+            }
+            
+            // If absorber is collecting, check for orbs that have reached it
+            if (absorber.isCollecting) {
                 for (let orb of xpOrbs) {
                     if (!orb.active || orb.collected) continue;
                     
-                    // Check distance from absorber to orb
+                    // Check if orb has reached the absorber
                     const dx = orb.x - absorber.x;
                     const dy = orb.y - absorber.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     
-                    if (dist < CONFIG.ORB_ABSORBER_COLLECTION_RADIUS) {
+                    if (dist < 15) { // Close enough to collect
                         orb.collected = true;
                         orb.active = false;
                         totalCollectedXP += orb.xpAmount;
                     }
+                }
+                
+                // Check if we should finish collecting (timeout or no more orbs nearby)
+                const collectionDuration = Date.now() - absorber.collectionStartTime;
+                const hasNearbyOrbs = xpOrbs.some(orb => {
+                    if (!orb.active || orb.collected) return false;
+                    const dx = orb.x - absorber.x;
+                    const dy = orb.y - absorber.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    return dist < CONFIG.ORB_ABSORBER_COLLECTION_RADIUS;
+                });
+                
+                // Finish collection after 3 seconds or if no more orbs nearby
+                if (collectionDuration > 3000 || !hasNearbyOrbs) {
+                    absorber.collected = true;
+                    absorber.active = false;
                 }
             }
         }
