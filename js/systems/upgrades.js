@@ -23,6 +23,7 @@ const Upgrades = {
         dashDuration: 0, // Dash duration upgrade
         dashCooldown: 0, // Dash cooldown reduction upgrade
         dashSpeed: 0, // Dash speed multiplier upgrade
+        homingBurstBullets: 0, // 0 = not unlocked, 1+ = unlocked
     },
     
     // Available upgrade options
@@ -204,6 +205,22 @@ const Upgrades = {
                 Upgrades.recalculateStats();
             }
         },
+        {
+            id: 'homingBurstBullets',
+            name: 'Homing Burst',
+            multiplier: 0, // Not a multiplier upgrade, just unlocks the feature
+            isRare: true, // Make it a rare upgrade
+            getDescription: (level) => {
+                if (level === 0) {
+                    return 'Burst bullets home in on enemies';
+                }
+                return 'Burst bullets home in on enemies (x' + (level + 1) + ')';
+            },
+            apply: () => {
+                Upgrades.levels.homingBurstBullets++;
+                // No stat recalculation needed, just a flag
+            }
+        },
     ],
     
     init() {
@@ -233,6 +250,7 @@ const Upgrades = {
             dashDuration: 0,
             dashCooldown: 0,
             dashSpeed: 0,
+            homingBurstBullets: 0,
         };
         
         // Recalculate stats from base

@@ -1,6 +1,6 @@
 // Bullet entity
 
-function createBullet(x, y, angle, speed = null, canSplit = false, splitGeneration = 0) {
+function createBullet(x, y, angle, speed = null, canSplit = false, splitGeneration = 0, isHoming = false) {
     const pierceCount = Upgrades.levels.piercing > 0 ? (2 + Upgrades.levels.piercing - 1) : 0;
     const bulletSpeed = speed !== null ? speed : CONFIG.BULLET_SPEED;
     return {
@@ -13,12 +13,64 @@ function createBullet(x, y, angle, speed = null, canSplit = false, splitGenerati
         pierceCount: pierceCount, // How many enemies this bullet can pierce through
         enemiesHit: [], // Track which enemies this bullet has already hit
         canSplit: canSplit, // Whether this bullet can split on hit
-        splitGeneration: splitGeneration // Track how many times this bullet has split (prevent infinite splitting)
+        splitGeneration: splitGeneration, // Track how many times this bullet has split (prevent infinite splitting)
+        isHoming: isHoming, // Whether this bullet homes in on enemies
+        targetEnemy: null // Current target enemy for homing bullets
     };
 }
 
-function updateBullet(bullet, deltaTime, playerPos) {
+function updateBullet(bullet, deltaTime, playerPos, enemies = []) {
     if (!bullet.active) return;
+    
+    // Homing logic for burst bullets
+    if (bullet.isHoming && enemies.length > 0) {
+        // Find nearest enemy
+        let nearestEnemy = null;
+        let nearestDist = Infinity;
+        
+        for (let enemy of enemies) {
+            if (!enemy.active) continue;
+            
+            const dx = enemy.x - bullet.x;
+            const dy = enemy.y - bullet.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < nearestDist && dist < 400) { // Only home within 400 pixels
+                nearestDist = dist;
+                nearestEnemy = enemy;
+            }
+        }
+        
+        // If we have a target, adjust velocity to home in
+        if (nearestEnemy) {
+            bullet.targetEnemy = nearestEnemy;
+            const dx = nearestEnemy.x - bullet.x;
+            const dy = nearestEnemy.y - bullet.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist > 0) {
+                // Calculate desired direction
+                const targetAngle = Math.atan2(dy, dx);
+                const currentAngle = Math.atan2(bullet.vy, bullet.vx);
+                
+                // Smoothly rotate towards target (turn rate)
+                let angleDiff = targetAngle - currentAngle;
+                // Normalize angle difference to [-PI, PI]
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                
+                // Turn rate: 0.15 radians per frame (adjustable)
+                const turnRate = 0.15;
+                const turnAmount = Math.max(-turnRate, Math.min(turnRate, angleDiff));
+                const newAngle = currentAngle + turnAmount;
+                
+                // Update velocity while maintaining speed
+                const speed = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy);
+                bullet.vx = Math.cos(newAngle) * speed;
+                bullet.vy = Math.sin(newAngle) * speed;
+            }
+        }
+    }
     
     bullet.x += bullet.vx;
     bullet.y += bullet.vy;
@@ -55,7 +107,10 @@ function renderBullet(ctx, bullet, cameraX, cameraY) {
     ctx.save();
     
     // Change color based on bullet type
-    if (bullet.canSplit) {
+    if (bullet.isHoming) {
+        ctx.fillStyle = '#ffff00'; // Yellow for homing bullets
+        ctx.strokeStyle = '#ffff00';
+    } else if (bullet.canSplit) {
         ctx.fillStyle = '#ff6600'; // Orange for splitting bullets
         ctx.strokeStyle = '#ff6600';
     } else if (bullet.pierceCount > 0) {

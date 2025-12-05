@@ -1,5 +1,7 @@
 # Vectroid
 
+**Play the game:** [https://philhoyt.github.io/vectroid/](https://philhoyt.github.io/vectroid/)
+
 ## How to Play
 
 Survive as long as possible by defeating enemies and collecting XP orbs.

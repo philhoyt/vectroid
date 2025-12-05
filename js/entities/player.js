@@ -257,13 +257,14 @@ const Player = {
         
         // Spawn bullets in a line, starting from player position
         const canSplit = Upgrades.levels.explosiveBullets > 0;
+        const isHoming = Upgrades.levels.homingBurstBullets > 0;
         for (let i = 0; i < bulletCount; i++) {
             const spawnOffset = CONFIG.PLAYER_SIZE + 5 + (i * spacing);
             const spawnX = this.x + Math.cos(this.angle) * spawnOffset;
             const spawnY = this.y + Math.sin(this.angle) * spawnOffset;
             
             // All bullets fire in the same direction (player's facing angle) with faster speed
-            bullets.push(createBullet(spawnX, spawnY, this.angle, CONFIG.BURST_BULLET_SPEED, canSplit, 0));
+            bullets.push(createBullet(spawnX, spawnY, this.angle, CONFIG.BURST_BULLET_SPEED, canSplit, 0, isHoming));
         }
         
         // Update last fire time

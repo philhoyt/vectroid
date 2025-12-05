@@ -91,7 +91,7 @@ const CONFIG = {
             name: 'Squiggly',
             size: 12,
             hp: 1,
-            speed: 2.5,
+            speed: 4.0,
             color: '#ff00ff',
             spawnAfter: 20, // seconds
             spawnChance: 0.4,
@@ -124,7 +124,7 @@ const CONFIG = {
     // Orb Absorbers
     ORB_ABSORBER_SPAWN_INTERVAL: 30000, // milliseconds between absorber spawns
     ORB_ABSORBER_SPAWN_DISTANCE: 200, // distance from player to spawn absorber
-    ORB_ABSORBER_COLLECTION_RADIUS: 900, // radius around absorber to collect orbs
+    ORB_ABSORBER_COLLECTION_RADIUS: 1200, // radius around absorber to collect orbs
     
     // Boss Enemy
     BOSS_SPAWN_INTERVAL: 60000, // milliseconds between boss spawns (60 seconds)

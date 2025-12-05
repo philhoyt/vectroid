@@ -261,7 +261,7 @@ function update(deltaTime) {
     
     // Update bullets
     for (let bullet of bullets) {
-        updateBullet(bullet, deltaTime, playerPos);
+        updateBullet(bullet, deltaTime, playerPos, enemies);
     }
     bullets = bullets.filter(b => b.active);
     
