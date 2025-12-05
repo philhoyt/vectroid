@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Survivor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #0a0a0a;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <script src="js/config.js"></script>
+    <script src="js/systems/input.js"></script>
+    <script src="js/entities/player.js"></script>
+    <script src="js/entities/bullet.js"></script>
+    <script src="js/entities/enemy.js"></script>
+    <script src="js/entities/xpOrb.js"></script>
+    <script src="js/entities/orbAbsorber.js"></script>
+    <script src="js/entities/asteroid.js"></script>
+    <script src="js/entities/boss.js"></script>
+    <script src="js/entities/particle.js"></script>
+    <script src="js/systems/spawn.js"></script>
+    <script src="js/systems/collision.js"></script>
+    <script src="js/systems/upgrades.js"></script>
+    <script src="js/systems/sound.js"></script>
+    <script src="js/systems/effects.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
+
