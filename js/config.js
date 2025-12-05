@@ -161,7 +161,8 @@ const CONFIG = {
     XP_MULTIPLIER: 1.25, // exponential multiplier for each level (1.25 = 25% increase per level, steeper curve)
     XP_ORB_SIZE: 6, // size of XP orbs
     XP_ORB_COLOR: '#00ffff', // color of XP orbs
-    XP_PICKUP_RADIUS: 100, // base pickup radius for XP orbs (magnetic + collection range)
+    XP_PICKUP_RADIUS: 40, // base pickup radius for XP orbs (collection range)
+    XP_ATTRACTION_RADIUS: 80, // radius where orbs start gravitating towards player
     
     // Upgrades
     UPGRADE_OPTIONS_COUNT: 3, // number of upgrade options to show per level

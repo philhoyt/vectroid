@@ -232,6 +232,7 @@ const Upgrades = {
             playerSpeed: CONFIG.PLAYER_SPEED,
             bulletSize: CONFIG.BULLET_SIZE,
             xpPickupRadius: CONFIG.XP_PICKUP_RADIUS,
+            xpAttractionRadius: CONFIG.XP_ATTRACTION_RADIUS,
             dashDuration: CONFIG.DASH_DURATION,
             dashCooldown: CONFIG.DASH_COOLDOWN,
             dashSpeed: CONFIG.DASH_SPEED_MULTIPLIER,
@@ -284,6 +285,8 @@ const Upgrades = {
         const xpPickupRadiusUpgrade = this.options.find(o => o.id === 'xpPickupRadius');
         const xpPickupRadiusMultiplier = (1 + xpPickupRadiusUpgrade.multiplier) ** this.levels.xpPickupRadius;
         CONFIG.XP_PICKUP_RADIUS = this.baseValues.xpPickupRadius * xpPickupRadiusMultiplier;
+        // XP Attraction Radius: scales with the same multiplier as pickup radius
+        CONFIG.XP_ATTRACTION_RADIUS = this.baseValues.xpAttractionRadius * xpPickupRadiusMultiplier;
         
         // Dash Duration: 15% longer duration per level
         const dashDurationUpgrade = this.options.find(o => o.id === 'dashDuration');
