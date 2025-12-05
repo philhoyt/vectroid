@@ -27,6 +27,7 @@ let score = 0;
 let xp = 0;
 let level = 1;
 let lives = 3; // Start with 3 lives
+let respawnTimer = 0; // Timer for auto-respawn
 let availableUpgrades = [];
 let selectedUpgradeIndex = 0; // Currently selected upgrade index for controller navigation
 let upgradeScrollOffset = 0; // Scroll offset for upgrade menu
@@ -77,12 +78,13 @@ xp = 0;
 level = 1;
 availableUpgrades = [];
 
-// Reset spawn system on game start
+    // Reset spawn system on game start
 function resetGame() {
     score = 0;
     xp = 0;
     level = 1;
     lives = 3; // Reset to 3 lives
+    respawnTimer = 0; // Reset respawn timer
     availableUpgrades = [];
     selectedUpgradeIndex = 0;
     upgradeScrollOffset = 0;
@@ -444,16 +446,33 @@ function update(deltaTime) {
     }
     
     // Check for player death
-    if (!Player.alive && gameState === 'playing') {
+    if (!Player.alive && gameState === 'playing' && respawnTimer === 0) {
         lives--;
         if (lives > 0) {
-            // Respawn with remaining lives
-            respawnPlayer();
-            // Brief invulnerability visual feedback
-            triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY * 0.5, CONFIG.SCREEN_SHAKE_DURATION * 0.5);
+            // Start respawn timer (2 seconds)
+            respawnTimer = 2000; // 2 seconds in milliseconds
+            // Create particle burst at player death location
+            const playerPos = Player.getPosition();
+            particles.push(...createParticleBurst(playerPos.x, playerPos.y, 30, '#ffffff'));
+            // Screen shake on death
+            triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY * 2, CONFIG.SCREEN_SHAKE_DURATION * 2);
         } else {
             // No lives left - game over
             gameState = 'gameOver';
+            // Create particle burst at player death location
+            const playerPos = Player.getPosition();
+            particles.push(...createParticleBurst(playerPos.x, playerPos.y, 30, '#ffffff'));
+            // Screen shake on death
+            triggerScreenShake(CONFIG.SCREEN_SHAKE_INTENSITY * 2, CONFIG.SCREEN_SHAKE_DURATION * 2);
+        }
+    }
+    
+    // Handle auto-respawn timer
+    if (respawnTimer > 0) {
+        respawnTimer -= deltaTime;
+        if (respawnTimer <= 0) {
+            respawnPlayer();
+            respawnTimer = 0;
         }
     }
 }
@@ -555,9 +574,11 @@ function render() {
         const upgrades = Upgrades.getUpgradeSummary();
         if (upgrades.length > 0) {
             renderCtx.font = '14px Courier New';
-            renderCtx.fillStyle = '#00ffff';
             let upgradeY = canvas.height - 20 - (upgrades.length * 18);
             upgrades.forEach(upgrade => {
+                // Color rare upgrades purple
+                const upgradeOption = Upgrades.options.find(o => o.id === upgrade.id);
+                renderCtx.fillStyle = (upgradeOption && upgradeOption.isRare) ? '#ff00ff' : '#00ffff';
                 renderCtx.fillText(`${upgrade.name} x${upgrade.level}`, 10, upgradeY);
                 upgradeY += 18;
             });
@@ -665,24 +686,27 @@ function render() {
             const isSelected = (Input.gamepad && index === selectedUpgradeIndex);
             
             // Draw option box (highlight if selected with controller)
-            ctx.strokeStyle = isSelected ? '#00ffff' : '#ffffff';
+            // Color rare upgrades purple
+            const isRare = upgrade.isRare || false;
+            ctx.strokeStyle = isRare ? (isSelected ? '#ff00ff' : '#ff00ff') : (isSelected ? '#00ffff' : '#ffffff');
             ctx.lineWidth = isSelected ? 3 : 2;
             ctx.strokeRect(boxX, y, boxWidth, optionHeight - 10);
             
             // Highlight background if selected
             if (isSelected) {
-                ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+                ctx.fillStyle = isRare ? 'rgba(255, 0, 255, 0.1)' : 'rgba(0, 255, 255, 0.1)';
                 ctx.fillRect(boxX, y, boxWidth, optionHeight - 10);
             }
-            
-        // Draw option text
-        ctx.fillStyle = isSelected ? '#00ffff' : '#ffffff';
+        
+        // Draw option text - color rare upgrades purple
+        
+        ctx.fillStyle = isRare ? (isSelected ? '#ff88ff' : '#ff00ff') : (isSelected ? '#00ffff' : '#ffffff');
         ctx.font = '20px Courier New';
         ctx.textAlign = 'left';
         const levelText = upgrade.level > 0 ? ` (Lv.${upgrade.level + 1})` : '';
         ctx.fillText(`${index + 1}. ${upgrade.name}${levelText}`, boxX + 20, y + 15);
         ctx.font = '16px Courier New';
-        ctx.fillStyle = isSelected ? '#88ffff' : '#cccccc';
+        ctx.fillStyle = isRare ? (isSelected ? '#ffaaff' : '#ff88ff') : (isSelected ? '#88ffff' : '#cccccc');
         ctx.fillText(upgrade.description, boxX + 20, y + 45);
         }
         
@@ -778,9 +802,11 @@ function render() {
         const upgrades = Upgrades.getUpgradeSummary();
         if (upgrades.length > 0) {
             ctx.font = '14px Courier New';
-            ctx.fillStyle = '#00ffff';
             let upgradeY = canvas.height - 20 - (upgrades.length * 18);
             upgrades.forEach(upgrade => {
+                // Color rare upgrades purple
+                const upgradeOption = Upgrades.options.find(o => o.id === upgrade.id);
+                ctx.fillStyle = (upgradeOption && upgradeOption.isRare) ? '#ff00ff' : '#00ffff';
                 ctx.fillText(`${upgrade.name} x${upgrade.level}`, 10, upgradeY);
                 upgradeY += 18;
             });
