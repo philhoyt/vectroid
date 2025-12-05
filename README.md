@@ -7,13 +7,17 @@ Survive as long as possible by defeating enemies and collecting XP orbs.
 ## Controls
 
 ### Keyboard
-- **Shift** - Dash (speed boost with cooldown)
+- **W / A / S / D** - Move (works like left stick - movement direction determines facing)
+- **Q** - Turn left 45 degrees
+- **E** - Turn right 45 degrees
+- **Mouse** - Look direction (only active when no gamepad is connected)
+- **Spacebar** - Dash (speed boost with cooldown)
 - **Escape** - Pause/Unpause
 - **R** - Restart game
 
 ### Gamepad
 - **Left Stick** - Move and face direction
-- **Right Stick** - Look direction
+- **Right Stick** - Look direction (overrides left stick)
 - **Right Trigger** - Dash
 - **Start Button** - Pause/Unpause/Restart
 - **D-Pad Up/Down** - Navigate upgrade menu

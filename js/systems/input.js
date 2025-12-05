@@ -13,9 +13,17 @@ const Input = {
     
     init() {
         window.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            // Handle Shift key specifically (can be "Shift" or "shift")
-            const normalizedKey = (key === 'shift' || e.key === 'Shift') ? 'shift' : key;
+            // Handle special keys
+            let normalizedKey;
+            if (e.key === 'Shift' || e.key === 'shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                normalizedKey = 'shift';
+            } else if (e.key === ' ' || e.code === 'Space') {
+                // Spacebar - e.key is " " (space character), e.code is "Space"
+                normalizedKey = ' ';
+            } else {
+                normalizedKey = e.key.toLowerCase();
+            }
+            
             if (!this.keys[normalizedKey]) {
                 this.keysPressed[normalizedKey] = true; // Mark as just pressed
             }
@@ -23,8 +31,16 @@ const Input = {
         });
         
         window.addEventListener('keyup', (e) => {
-            const key = e.key.toLowerCase();
-            const normalizedKey = (key === 'shift' || e.key === 'Shift') ? 'shift' : key;
+            // Handle special keys
+            let normalizedKey;
+            if (e.key === 'Shift' || e.key === 'shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                normalizedKey = 'shift';
+            } else if (e.key === ' ' || e.code === 'Space') {
+                // Spacebar
+                normalizedKey = ' ';
+            } else {
+                normalizedKey = e.key.toLowerCase();
+            }
             this.keys[normalizedKey] = false;
         });
         
@@ -142,7 +158,7 @@ const Input = {
     },
     
     getMouseAngle(playerX, playerY, cameraX, cameraY, currentAngle) {
-        // Check for gamepad sticks (right stick has priority, then left stick)
+        // Only use gamepad if it's connected and being used
         if (this.gamepad) {
             // Right stick has priority for look direction
             const rightStickX = this.getGamepadAxis(2); // Right stick X
@@ -159,15 +175,31 @@ const Input = {
             if (Math.abs(leftStickX) > 0.15 || Math.abs(leftStickY) > 0.15) {
                 return Math.atan2(leftStickY, leftStickX);
             }
+            
+            // If gamepad is connected but no stick input, maintain current angle
+            return currentAngle !== undefined ? currentAngle : 0;
         }
         
-        // No input - return current angle to maintain direction (mouse control removed)
-        return currentAngle !== undefined ? currentAngle : 0;
+        // No gamepad - use mouse for look direction
+        const dx = this.mouseX - (CONFIG.CANVAS_WIDTH / 2);
+        const dy = this.mouseY - (CONFIG.CANVAS_HEIGHT / 2);
+        
+        // Always use mouse angle when no gamepad (mouse overrides keyboard movement direction)
+        return Math.atan2(dy, dx);
+    },
+    
+    // Check if mouse is being actively used (moved from center)
+    isMouseActive() {
+        if (this.gamepad) return false; // Mouse disabled when gamepad is connected
+        const dx = this.mouseX - (CONFIG.CANVAS_WIDTH / 2);
+        const dy = this.mouseY - (CONFIG.CANVAS_HEIGHT / 2);
+        return Math.abs(dx) > 1 || Math.abs(dy) > 1;
     },
     
     getMovementVector() {
         let forward = 0;
         let strafe = 0;
+        let movementAngle = null; // For keyboard: angle of movement direction
         
         // Check for gamepad input first
         if (this.gamepad) {
@@ -198,13 +230,50 @@ const Input = {
             }
         }
         
-        // Keyboard input (overrides gamepad if pressed)
-        if (this.isPressed('w') || this.isPressed('ArrowUp')) forward = 1;
-        if (this.isPressed('s') || this.isPressed('ArrowDown')) forward = -1;
-        if (this.isPressed('a') || this.isPressed('ArrowLeft')) strafe = -1;
-        if (this.isPressed('d') || this.isPressed('ArrowRight')) strafe = 1;
+        // Keyboard input (WASD works like left stick - movement direction determines facing)
+        // Check if any WASD keys are pressed
+        const hasKeyboardInput = this.isPressed('w') || this.isPressed('s') || 
+                                 this.isPressed('a') || this.isPressed('d');
         
-        return { forward, strafe };
+        if (hasKeyboardInput && !this.gamepad) {
+            // WASD movement: combine inputs to get direction
+            let moveX = 0;
+            let moveY = 0;
+            
+            if (this.isPressed('w')) moveY -= 1; // Forward (up)
+            if (this.isPressed('s')) moveY += 1; // Backward (down)
+            if (this.isPressed('a')) moveX -= 1; // Left
+            if (this.isPressed('d')) moveX += 1; // Right
+            
+            // Normalize diagonal movement
+            if (moveX !== 0 || moveY !== 0) {
+                const length = Math.sqrt(moveX * moveX + moveY * moveY);
+                moveX /= length;
+                moveY /= length;
+                
+                // Calculate movement angle (this will be used to set facing direction)
+                movementAngle = Math.atan2(moveY, moveX);
+                
+                // Set forward/strafe for movement (magnitude of 1 for keyboard)
+                forward = moveY;
+                strafe = moveX;
+            }
+        }
+        
+        return { forward, strafe, movementAngle };
+    },
+    
+    // Get turn angle from Q/E keys (45 degrees)
+    getTurnAngle() {
+        if (this.gamepad) return 0; // No keyboard turning when gamepad is active
+        
+        if (this.wasJustPressed('q')) {
+            return -Math.PI / 4; // -45 degrees
+        }
+        if (this.wasJustPressed('e')) {
+            return Math.PI / 4; // +45 degrees
+        }
+        return 0;
     },
     
     isShootPressed() {

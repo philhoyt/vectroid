@@ -33,10 +33,33 @@ const Player = {
         
         const now = Date.now();
         
+        // Handle Q/E turning (45 degree increments)
+        const turnAngle = Input.getTurnAngle();
+        if (turnAngle !== 0) {
+            this.angle += turnAngle;
+        }
+        
         // Update angle to face mouse/gamepad (only if there's input, otherwise keep current angle)
-        const newAngle = Input.getMouseAngle(this.x, this.y, cameraX, cameraY, this.angle);
-        if (newAngle !== undefined) {
-            this.angle = newAngle;
+        const movement = Input.getMovementVector();
+        const isGamepadActive = Input.gamepad && (Math.abs(Input.getGamepadAxis(0)) > 0.15 || Math.abs(Input.getGamepadAxis(1)) > 0.15 || 
+                                                   Math.abs(Input.getGamepadAxis(2)) > 0.15 || Math.abs(Input.getGamepadAxis(3)) > 0.15);
+        
+        // Priority: Mouse (if no gamepad) > Gamepad > Keyboard movement direction
+        if (isGamepadActive) {
+            // Gamepad active - use gamepad for look direction
+            const newAngle = Input.getMouseAngle(this.x, this.y, cameraX, cameraY, this.angle);
+            if (newAngle !== undefined) {
+                this.angle = newAngle;
+            }
+        } else if (Input.isMouseActive()) {
+            // No gamepad and mouse is active - mouse overrides keyboard movement direction
+            const mouseAngle = Input.getMouseAngle(this.x, this.y, cameraX, cameraY, this.angle);
+            if (mouseAngle !== undefined) {
+                this.angle = mouseAngle;
+            }
+        } else if (movement.movementAngle !== null) {
+            // No gamepad and no mouse input - use keyboard movement direction for facing
+            this.angle = movement.movementAngle;
         }
         
         // Update dash cooldown
@@ -45,15 +68,13 @@ const Player = {
         }
         
         
-        // Check for dash input (keyboard or gamepad right trigger)
-        const dashInput = Input.wasJustPressed('shift') || Input.wasJustPressed('Shift') || Input.isDashPressed();
+        // Check for dash input (keyboard Spacebar or gamepad right trigger)
+        const dashInput = Input.wasJustPressed(' ') || Input.wasJustPressed('space') || Input.isDashPressed();
         if (dashInput && !this.isDashing && this.dashCooldown <= 0) {
             this.startDash();
         }
         
         // Normal movement with momentum - forward/backward and strafe
-        const movement = Input.getMovementVector();
-        
         // Check if using gamepad left stick for movement
         const isGamepadMovement = Input.gamepad && (Math.abs(Input.getGamepadAxis(0)) > 0.15 || Math.abs(Input.getGamepadAxis(1)) > 0.15);
         
@@ -72,18 +93,15 @@ const Player = {
                 this.vy += Math.sin(stickAngle) * magnitude * CONFIG.PLAYER_ACCELERATION;
             }
         } else {
-            // Keyboard: separate forward/backward and strafe
-            // Apply acceleration based on input
-            if (movement.forward !== 0) {
-                // Accelerate forward/backward in the direction player is facing (mouse direction)
-                this.vx += Math.cos(this.angle) * movement.forward * CONFIG.PLAYER_ACCELERATION;
-                this.vy += Math.sin(this.angle) * movement.forward * CONFIG.PLAYER_ACCELERATION;
-            }
-            if (movement.strafe !== 0) {
-                // Accelerate perpendicular to the facing direction (strafe)
-                const strafeAngle = this.angle + Math.PI / 2;
-                this.vx += Math.cos(strafeAngle) * movement.strafe * CONFIG.PLAYER_ACCELERATION;
-                this.vy += Math.sin(strafeAngle) * movement.strafe * CONFIG.PLAYER_ACCELERATION;
+            // Keyboard: WASD works like left stick - movement direction determines facing
+            // Movement angle is already set above, now apply movement
+            if (movement.movementAngle !== null) {
+                // Move in the direction of the movement angle
+                const moveMagnitude = Math.sqrt(movement.forward * movement.forward + movement.strafe * movement.strafe);
+                if (moveMagnitude > 0) {
+                    this.vx += Math.cos(movement.movementAngle) * moveMagnitude * CONFIG.PLAYER_ACCELERATION;
+                    this.vy += Math.sin(movement.movementAngle) * moveMagnitude * CONFIG.PLAYER_ACCELERATION;
+                }
             }
         }
         
