@@ -83,13 +83,22 @@ function resetGame() {
     level = 1;
     availableUpgrades = [];
     selectedUpgradeIndex = 0;
+    upgradeScrollOffset = 0;
     bullets = [];
     enemies = [];
     xpOrbs = [];
     orbAbsorbers = [];
     asteroids = [];
     bosses = [];
+    particles = []; // Reset particles
     gameState = 'playing';
+    
+    // Reset screen shake
+    screenShake.duration = 0;
+    screenShake.intensity = 0;
+    screenShake.startTime = 0;
+    
+    // Reset all systems
     Player.init(canvas);
     Spawn.init();
     Upgrades.init();
@@ -103,9 +112,9 @@ function update(deltaTime) {
         Input.updateGamepad();
     }
     
-    // Check for pause/unpause (Start button or Escape key) - check before Input.update() clears it
+    // Check for pause/unpause (Escape key or Start button when playing/paused)
     const startButtonPressed = Input.gamepad && Input.wasGamepadButtonJustPressed(9);
-    if (Input.wasJustPressed('Escape') || startButtonPressed) {
+    if (Input.wasJustPressed('Escape')) {
         if (gameState === 'playing') {
             gameState = 'paused';
         } else if (gameState === 'paused') {
@@ -113,11 +122,20 @@ function update(deltaTime) {
         }
     }
     
-    // Check for restart on game over (Start button or R key)
-    if (gameState === 'gameOver') {
-        if (Input.wasJustPressed('r') || Input.wasJustPressed('R') || startButtonPressed) {
+    // Start button: pause/unpause when playing/paused, restart when gameOver
+    if (startButtonPressed) {
+        if (gameState === 'playing') {
+            gameState = 'paused';
+        } else if (gameState === 'paused') {
+            gameState = 'playing';
+        } else if (gameState === 'gameOver') {
             resetGame();
         }
+    }
+    
+    // Check for restart (R key works from any state)
+    if (Input.wasJustPressed('r') || Input.wasJustPressed('R')) {
+        resetGame();
     }
     
     if (gameState === 'paused') {
@@ -399,9 +417,15 @@ function render() {
     const useOffscreen = CONFIG.CHROMATIC_ABERRATION_ENABLED && gameState === 'playing';
     const renderCtx = useOffscreen ? offscreenCtx : ctx;
     
-    // Clear canvas
-    renderCtx.fillStyle = '#0a0a0a';
-    renderCtx.fillRect(0, 0, canvas.width, canvas.height);
+    // Clear canvas (always clear main canvas first)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if (useOffscreen) {
+        // Also clear offscreen canvas if using it
+        renderCtx.fillStyle = '#0a0a0a';
+        renderCtx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     
     if (gameState === 'playing') {
         // Calculate camera offset to keep player centered
@@ -664,6 +688,11 @@ function render() {
             renderXPOrb(ctx, orb, cameraX, cameraY);
         }
         
+        // Render particles
+        for (let particle of particles) {
+            renderParticle(ctx, particle, cameraX, cameraY);
+        }
+        
         // Render bullets
         for (let bullet of bullets) {
             renderBullet(ctx, bullet, cameraX, cameraY);
@@ -687,6 +716,26 @@ function render() {
         // Render player
         Player.render(ctx, cameraX, cameraY);
         
+        // Render UI (score, level, etc.)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '20px Courier New';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Score: ${score}`, 10, 10);
+        ctx.fillText(`Level: ${level}`, 10, 35);
+        
+        // Render upgrade summary
+        const upgrades = Upgrades.getUpgradeSummary();
+        if (upgrades.length > 0) {
+            ctx.font = '14px Courier New';
+            ctx.fillStyle = '#00ffff';
+            let upgradeY = canvas.height - 20 - (upgrades.length * 18);
+            upgrades.forEach(upgrade => {
+                ctx.fillText(`${upgrade.name} x${upgrade.level}`, 10, upgradeY);
+                upgradeY += 18;
+            });
+        }
+        
         // Render dark overlay
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -698,6 +747,7 @@ function render() {
         ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
         ctx.font = '24px Courier New';
         ctx.fillText('Press Escape or Start to resume', canvas.width / 2, canvas.height / 2 + 50);
+        return; // Exit early, don't apply post-processing
     }
     
     // Apply post-processing effects if enabled

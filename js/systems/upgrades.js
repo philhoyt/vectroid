@@ -31,11 +31,11 @@ const Upgrades = {
         {
             id: 'bulletCount',
             name: 'More Bullets',
-            multiplier: 0.08, // 8% increase per level (reduced from 10% to slow power scaling)
+            multiplier: 0.12, // 12% increase per level (buffed from 8%)
             getDescription: (level) => {
                 // Show what you'll get after selecting (next level)
                 const nextLevel = level + 1;
-                const totalMultiplier = (1 + 0.10) ** nextLevel;
+                const totalMultiplier = (1 + 0.12) ** nextLevel;
                 const totalPercent = ((totalMultiplier - 1) * 100).toFixed(1);
                 return `+${totalPercent}% bullets (x${nextLevel})`;
             },
@@ -262,7 +262,8 @@ const Upgrades = {
         const bulletCountUpgrade = this.options.find(o => o.id === 'bulletCount');
         const bulletMultiplier = (1 + bulletCountUpgrade.multiplier) ** this.levels.bulletCount;
         CONFIG.BULLET_COUNT = Math.floor(this.baseValues.bulletCount * bulletMultiplier);
-        CONFIG.BURST_BULLET_COUNT = Math.floor(this.baseValues.burstBulletCount * bulletMultiplier);
+        // Burst bullets: percentage increase + 1 bullet per level
+        CONFIG.BURST_BULLET_COUNT = Math.floor(this.baseValues.burstBulletCount * bulletMultiplier) + this.levels.bulletCount;
         
         // Fire Rate: 8% faster per level (reduces interval)
         const fireRateUpgrade = this.options.find(o => o.id === 'fireRate');

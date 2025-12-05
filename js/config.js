@@ -53,7 +53,7 @@ const CONFIG = {
     DIRECTIONAL_PULSE_SPREAD: 0.8, // spread angle in radians (cone width)
     
     // Burst Fire (automatic)
-    BURST_BULLET_COUNT: 3, // Reduced from 5 to 3 (number of bullets per burst)
+    BURST_BULLET_COUNT: 3, // Base number of bullets per burst
     BURST_SPREAD: 0.3, // spread angle in radians (cone width)
     BURST_INTERVAL_BASE: 2000, // base milliseconds between automatic bursts (2 seconds)
     BURST_BULLET_SPEED: 8, // speed of burst bullets (faster than regular bullets)
