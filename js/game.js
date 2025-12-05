@@ -7,12 +7,10 @@ const ctx = canvas.getContext('2d');
 const offscreenCanvas = document.createElement('canvas');
 const offscreenCtx = offscreenCanvas.getContext('2d');
 
-// Set canvas size to full window (max 1280×800 for performance)
+// Set canvas size to fixed 1200×800
 function resizeCanvas() {
-    const maxWidth = 1280;
-    const maxHeight = 800;
-    canvas.width = Math.min(window.innerWidth, maxWidth);
-    canvas.height = Math.min(window.innerHeight, maxHeight);
+    canvas.width = 1200;
+    canvas.height = 800;
     // Update config to match actual canvas size
     CONFIG.CANVAS_WIDTH = canvas.width;
     CONFIG.CANVAS_HEIGHT = canvas.height;
